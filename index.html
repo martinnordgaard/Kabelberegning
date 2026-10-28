@@ -67,6 +67,8 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
 .seg.two{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule)}
 .seg.two button,.seg.two button + button{background:var(--field);border:0}
 .seg.two button[aria-checked="true"]{background:var(--accent)}
+.resetrow{padding:0 16px 16px}
+.reset{width:100%;min-height:44px;font:inherit;font-size:16px;font-weight:500;color:var(--ink);background:transparent;border:1px solid var(--rule);border-radius:4px;cursor:pointer}
 .chips{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
 .chip{min-height:32px;padding:3px 12px;font:inherit;font-size:14px;color:var(--ink);background:transparent;border:1px solid var(--rule);border-radius:16px;cursor:pointer}
 .chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);font-weight:600}
@@ -176,6 +178,7 @@ summary{cursor:pointer;font-weight:600;font-size:15px}
         </div>
       </section>
 
+      <div class="resetrow"><button type="button" class="reset" id="b_reset">Tøm alle felt</button></div>
       <details class="more">
         <summary>Flere innstillinger</summary>
         <p class="hint" style="margin:0 0 14px">Fornuftige verdier er allerede satt. Endre bare det som avviker.</p>
@@ -611,7 +614,19 @@ FIELDS.forEach(k=>{
 });
 $('c_start').addEventListener('change',update);
 
-if(!load()){applyMode();}
+function resetAll(){
+  Object.assign(st,{mode:'motor',inp:'a',cond:'Cu',ins:'PEX',start:'dol'});
+  ['val','len','vern','ik'].forEach(k=>{$('f_'+k).value='';});
+  $('f_eta').value='92';$('f_temp').value='30';$('f_ngrp').value='1';$('f_dustart').value='10';$('f_t').value='0,1';$('f_smin').value='1.5';
+  $('c_start').checked=true;
+  applyMode();
+  update();
+  window.scrollTo(0,0);
+}
+$('b_reset').addEventListener('click',resetAll);
+// Verdier huskes ikke mellom åpninger: alt nullstilles når siden åpnes på nytt
+try{localStorage.removeItem('kabeldim-v1');}catch(e){}
+applyMode();
 $('f_smin').value=String(parseFloat($('f_smin').value)||1.5);
 update();
 </script>

@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Kabeldimensjonering</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Kabeldim">
+<meta name="theme-color" content="#1b252c">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
@@ -36,6 +40,11 @@ html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:10
 body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.45 Barlow,system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
 main{max-width:1080px;margin:0 auto;padding:20px 16px 48px}
 h1,h2{font-family:"Barlow Semi Condensed",Barlow,system-ui,sans-serif;font-weight:600;margin:0;letter-spacing:.005em}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{flex:0 0 auto;width:52px;height:52px}
+.brand h1{font-weight:700;text-transform:uppercase;letter-spacing:.025em;font-size:clamp(24px,6.6vw,40px);line-height:1}
+.stripe{height:6px;margin:14px 0 14px;background:repeating-linear-gradient(-45deg,#ffc857 0 10px,#1b252c 10px 20px)}
+.ver{margin-top:10px !important;font-size:12.5px}
 h1{font-size:clamp(30px,7vw,44px);line-height:1.05}
 h2{font-size:21px;line-height:1.2}
 .notice{margin:0 0 20px;padding:10px 12px;border-left:3px solid var(--warn);background:var(--surface);font-size:15px;max-width:70ch}
@@ -122,9 +131,13 @@ summary{cursor:pointer;font-weight:600;font-size:15px}
 <main>
   <noscript><p class="notice"><strong>JavaScript er slått av i denne visningen.</strong> Knappene og beregningen virker ikke her. Åpne siden i en vanlig nettleser, ikke i forhåndsvisning av vedlegg eller filer.</p></noscript>
   <p class="notice" id="jserr" hidden></p>
-  <h1>Kabeldimensjonering</h1>
-  <p class="lede">Finn minste tverrsnitt for motorer og vanlige kurser ut fra strømføring, spenningsfall og kortslutning. Beregningen oppdateres mens du skriver.</p>
-  <p class="notice"><strong>NEK 400:2026 gjelder fra 1. juli 2026.</strong> Kabler skal ha brannklasse Dca-s2,d2,a1 (i praksis halogenfrie), og PVC-isolerte kabler kan i praksis ikke brukes i nye anlegg. Velg derfor PEX for nye anlegg.</p>
+  <header class="brand">
+    <svg class="logo" viewBox="0 0 56 56" role="img" aria-label="Logo"><polygon points="28,2 50.5,15 50.5,41 28,54 5.5,41 5.5,15" style="fill:var(--res-bg)" stroke="#ffc857" stroke-width="3" stroke-linejoin="round"/><polygon points="31.5,11 16.5,31.5 25.5,31.5 22.5,45 39.5,23.5 30,23.5" fill="#ffc857"/></svg>
+    <h1 id="t_tittel">Kabeldimensjonering</h1>
+  </header>
+  <div class="stripe" aria-hidden="true"></div>
+  <p class="lede" id="t_ingress"></p>
+  <p class="notice" id="t_merknad"></p>
 
   <div class="layout">
     <div class="inputs">
@@ -276,18 +289,41 @@ summary{cursor:pointer;font-weight:600;font-size:15px}
     </div>
 
     <aside class="result" aria-live="polite">
-      <p class="disclaimer"><strong>Veiledende beregning.</strong> Ikke kontrollert mot NEK 400:2026 og ingen garanti for riktighet. Verifiser alltid mot normen og kabelens datablad. Du er selv ansvarlig for dimensjoneringen.</p>
+      <p class="disclaimer" id="t_advarsel"></p>
       <div id="resbody"></div>
     </aside>
   </div>
 
   <div class="foot">
-    <p>Strømføringsevne er for ett kabel med tre (motor, 3-fas) eller to (1-fas) belastede ledere, referert til 30 °C i luft og 20 °C i jord, og er korrigert for temperatur og gruppering. Aluminium er regnet som 78 % av kobber og starter på 16 mm². For 0,75 og 1 mm² er strømføringen anslått ut fra 1,5 mm². EPR bruker samme verdier som PEX, slik IEC 60364-5-52 behandler dem. Spenningsfall bruker 0,0225 Ω·mm²/m for Cu og 0,036 for Al, pluss 0,08 mΩ/m reaktans.</p>
-    <p>Tabellverdiene er veiledende (IEC 60364-5-52) og er ikke kontrollert mot NEK 400:2026. Kontroller mot normen og databladet til kabelen du bruker. Installatøren er ansvarlig for endelig dimensjonering og samsvar med forskrift om elektriske lavspenningsanlegg. Dette er et regnehjelpemiddel, ikke prosjektering.</p>
+    <p id="t_fot1"></p>
+    <p id="t_fot2"></p>
+    <p class="ver" id="t_versjon"></p>
   </div>
 </main>
 
 <script>
+// ================================================================
+// INNSTILLINGER. Her kan du endre tekstene på siden.
+// Endre bare teksten mellom anførselstegnene. HTML som <strong> fungerer.
+// Tabeller og faktorer (strømføring, temperatur, gruppering, vern,
+// oppstartsstrøm) ligger lenger ned, under "// ==CALC==" og "START_K".
+// ================================================================
+const TEKST={
+  tittel:"Kabeldimensjonering",
+  ingress:"Finn minste tverrsnitt for motorer og vanlige kurser ut fra strømføring, spenningsfall og kortslutning. Beregningen oppdateres mens du skriver.",
+  merknad:"<strong>NEK 400:2026 gjelder fra 1. juli 2026.</strong> Kabler skal ha brannklasse Dca-s2,d2,a1 (i praksis halogenfrie), og PVC-isolerte kabler kan i praksis ikke brukes i nye anlegg. Velg derfor PEX for nye anlegg.",
+  advarsel:"<strong>Veiledende beregning.</strong> Ikke kontrollert mot NEK 400:2026 og ingen garanti for riktighet. Verifiser alltid mot normen og kabelens datablad. Du er selv ansvarlig for dimensjoneringen.",
+  fot1:"Strømføringsevne er for ett kabel med tre (motor, 3-fas) eller to (1-fas) belastede ledere, referert til 30 °C i luft og 20 °C i jord, og er korrigert for temperatur og gruppering. Aluminium er regnet som 78 % av kobber og starter på 16 mm². For 0,75 og 1 mm² er strømføringen anslått ut fra 1,5 mm². EPR bruker samme verdier som PEX, slik IEC 60364-5-52 behandler dem. Spenningsfall bruker 0,0225 Ω·mm²/m for Cu og 0,036 for Al, pluss 0,08 mΩ/m reaktans.",
+  fot2:"Tabellverdiene er veiledende (IEC 60364-5-52) og er ikke kontrollert mot NEK 400:2026. Kontroller mot normen og databladet til kabelen du bruker. Installatøren er ansvarlig for endelig dimensjonering og samsvar med forskrift om elektriske lavspenningsanlegg. Dette er et regnehjelpemiddel, ikke prosjektering.",
+  versjon:"Versjon 28.10.2026"
+};
+(function(){
+  const kart={t_tittel:'tittel',t_ingress:'ingress',t_merknad:'merknad',t_advarsel:'advarsel',t_fot1:'fot1',t_fot2:'fot2',t_versjon:'versjon'};
+  for(const id in kart){const el=document.getElementById(id);if(el&&TEKST[kart[id]]!==undefined)el.innerHTML=TEKST[kart[id]];}
+  document.title=TEKST.tittel;
+})();
+// ================================================================
+
 window.addEventListener('error',function(e){var b=document.getElementById('jserr');if(b){b.hidden=false;b.textContent='Feil i siden: '+(e.message||'ukjent')+' (linje '+(e.lineno||'?')+')';}});
 // ==CALC==
 const SIZES=[0.75,1,1.5,2.5,4,6,10,16,25,35,50,70,95,120,150,185,240,300];

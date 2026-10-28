@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kabeldimensjonering</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#e7ebee; --surface:#f6f8f9; --field:#ffffff; --ink:#182027; --muted:#55636e; --rule:#c2ccd3;
+  --accent:#1c4f8c; --accent-ink:#ffffff; --ok:#1d7a46; --warn:#9a5700; --bad:#b3261e;
+  --res-bg:#1b252c; --res-ink:#e9eef1; --res-muted:#9fb0bb; --res-rule:#3a4953; --res-hi:#ffc857;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#11171b; --surface:#192127; --field:#10161a; --ink:#e4e9ec; --muted:#93a2ad; --rule:#313e47;
+    --accent:#6ea4e6; --accent-ink:#0c1218; --ok:#58c487; --warn:#e8a54a; --bad:#f07a72;
+    --res-bg:#222d35; --res-ink:#eef2f4; --res-muted:#9fb0bb; --res-rule:#3d4d58; --res-hi:#ffc857;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#11171b; --surface:#192127; --field:#10161a; --ink:#e4e9ec; --muted:#93a2ad; --rule:#313e47;
+  --accent:#6ea4e6; --accent-ink:#0c1218; --ok:#58c487; --warn:#e8a54a; --bad:#f07a72;
+  --res-bg:#222d35; --res-ink:#eef2f4; --res-muted:#9fb0bb; --res-rule:#3d4d58; --res-hi:#ffc857;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.45 Barlow,system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+main{max-width:1080px;margin:0 auto;padding:20px 16px 48px}
+h1,h2{font-family:"Barlow Semi Condensed",Barlow,system-ui,sans-serif;font-weight:600;margin:0;letter-spacing:.005em}
+h1{font-size:clamp(30px,7vw,44px);line-height:1.05}
+h2{font-size:21px;line-height:1.2}
+.notice{margin:0 0 20px;padding:10px 12px;border-left:3px solid var(--warn);background:var(--surface);font-size:15px;max-width:70ch}
+.lede{margin:8px 0 12px;color:var(--muted);max-width:60ch}
+.layout{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:900px){
+  .layout{grid-template-columns:minmax(0,1fr) 410px;align-items:start}
+  .result{position:sticky;top:16px}
+}
+.inputs{background:var(--surface);border:1px solid var(--rule);border-radius:6px}
+.sec{padding:18px 16px 20px}
+.sec + .sec{border-top:1px solid var(--rule)}
+.sec h2{margin-bottom:14px}
+.grid{display:grid;gap:14px;grid-template-columns:1fr 1fr}
+.grid .wide{grid-column:1 / -1}
+@media (max-width:420px){.grid{grid-template-columns:1fr}}
+.f{display:block}
+.f > .lab{display:block;font-size:14px;font-weight:500;color:var(--muted);margin-bottom:5px}
+.in{position:relative;display:block}
+.in input,.f select{width:100%;min-height:44px;padding:9px 44px 9px 12px;font:inherit;font-size:16px;color:var(--ink);background:var(--field);border:1px solid var(--rule);border-radius:4px}
+.f select{padding-right:12px}
+.in em{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-style:normal;color:var(--muted);font-size:14px;pointer-events:none}
+.in input::placeholder{color:var(--muted);opacity:.75}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.seg{display:flex;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--field)}
+.seg button{flex:1 1 0;min-height:44px;padding:8px 6px;font:inherit;font-size:15px;font-weight:500;color:var(--ink);background:transparent;border:0;cursor:pointer}
+.seg button + button{border-left:1px solid var(--rule)}
+.seg button[aria-checked="true"]{background:var(--accent);color:var(--accent-ink)}
+.seg.two{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule)}
+.seg.two button,.seg.two button + button{background:var(--field);border:0}
+.seg.two button[aria-checked="true"]{background:var(--accent)}
+.chips{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.chip{min-height:32px;padding:3px 12px;font:inherit;font-size:14px;color:var(--ink);background:transparent;border:1px solid var(--rule);border-radius:16px;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);font-weight:600}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:15px}
+.check input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--accent)}
+.hint{font-size:13px;color:var(--muted);margin:6px 0 0}
+[hidden]{display:none !important}
+
+.result{background:var(--res-bg);color:var(--res-ink);border-radius:6px;padding:18px 16px 20px}
+.result .muted{color:var(--res-muted)}
+.disclaimer{margin:0 0 16px;padding:8px 10px;border-left:3px solid var(--res-hi);background:rgba(255,200,87,.12);font-size:13.5px;line-height:1.4;color:var(--res-ink)}
+.empty{margin:0;color:var(--res-muted);padding:8px 0}
+.res-top{display:flex;gap:14px;align-items:center;justify-content:space-between}
+.res-size{font-family:"Barlow Semi Condensed",Barlow,sans-serif;font-weight:700;line-height:.95}
+.res-size .n{font-size:clamp(56px,16vw,76px)}
+.res-size .u{font-size:24px;margin-left:6px;font-weight:600;color:var(--res-muted)}
+.res-cable{margin:8px 0 0;font-size:17px;font-weight:600}
+.res-sub{margin:2px 0 0;font-size:14px;color:var(--res-muted)}
+.cable-fig{flex:0 0 auto;width:min(44vw,170px);height:auto}
+.why{margin:16px 0 0;padding:10px 12px;border-left:3px solid var(--res-hi);background:rgba(255,255,255,.05);font-size:15px}
+.nums{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin:16px 0 0}
+.nums div{border-top:1px solid var(--res-rule);padding-top:6px}
+.nums dt{font-size:13px;color:var(--res-muted)}
+.nums dd{margin:0;font-size:19px;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:14px}
+.req{margin-top:16px}
+.req th,.req td{text-align:left;padding:7px 6px 7px 0;border-top:1px solid var(--res-rule);vertical-align:top;font-weight:400}
+.req thead th{color:var(--res-muted);font-size:13px;border-top:0;padding-top:0}
+.req td.m{font-weight:600;white-space:nowrap}
+.req tr.dom td:first-child{color:var(--res-hi);font-weight:600}
+.warns{margin:14px 0 0;padding:0;list-style:none;font-size:14px;color:var(--res-hi)}
+.warns li + li{margin-top:4px}
+.result details{margin-top:16px;border-top:1px solid var(--res-rule);padding-top:10px}
+.more{border-top:1px solid var(--rule);padding:0 16px}
+.more > summary{padding:14px 0;min-height:44px;font-size:16px}
+.more[open] > summary{padding-bottom:10px}
+.more > .grid{padding-bottom:20px}
+summary{cursor:pointer;font-weight:600;font-size:15px}
+.scroll{overflow-x:auto;margin-top:10px}
+.all th,.all td{text-align:right;padding:5px 8px;border-top:1px solid var(--res-rule);white-space:nowrap;font-weight:400}
+.all thead th{color:var(--res-muted);font-size:12.5px;border-top:0}
+.all th:first-child,.all td:first-child{text-align:left;padding-left:0}
+.all tr.pick td{background:rgba(255,200,87,.14);font-weight:600}
+.all .no{color:var(--res-muted);text-decoration:line-through;text-decoration-thickness:1px}
+.bad{color:#ff9b93}
+.foot{margin:18px 0 0;font-size:13.5px;color:var(--muted);max-width:90ch}
+.foot p{margin:0 0 6px}
+</style>
+</head>
+<body>
+<main>
+  <noscript><p class="notice"><strong>JavaScript er slått av i denne visningen.</strong> Knappene og beregningen virker ikke her. Åpne siden i en vanlig nettleser, ikke i forhåndsvisning av vedlegg eller filer.</p></noscript>
+  <p class="notice" id="jserr" hidden></p>
+  <h1>Kabeldimensjonering</h1>
+  <p class="lede">Finn minste tverrsnitt for motorer og vanlige kurser ut fra strømføring, spenningsfall og kortslutning. Beregningen oppdateres mens du skriver.</p>
+  <p class="notice"><strong>NEK 400:2026 gjelder fra 1. juli 2026.</strong> Kabler skal ha brannklasse Dca-s2,d2,a1 (i praksis halogenfrie), og PVC-isolerte kabler kan i praksis ikke brukes i nye anlegg. Velg derfor PEX for nye anlegg.</p>
+
+  <div class="layout">
+    <div class="inputs">
+
+      <section class="sec">
+        <div class="grid">
+          <div class="wide">
+            <span class="f"><span class="lab">Type</span></span>
+            <div class="seg" role="radiogroup" aria-label="Type last" data-key="mode">
+              <button type="button" role="radio" data-v="motor">Motor 3-fas</button>
+              <button type="button" role="radio" data-v="k3">Kurs 3-fas</button>
+              <button type="button" role="radio" data-v="k1">Kurs 1-fas</button>
+            </div>
+          </div>
+
+          <div class="wide">
+            <div class="seg" role="radiogroup" aria-label="Oppgi last som" data-key="inp">
+              <button type="button" role="radio" data-v="a">Strøm (A)</button>
+              <button type="button" role="radio" data-v="kw" id="b_kw">Effekt (kW)</button>
+            </div>
+          </div>
+
+          <label class="f">
+            <span class="lab" id="l_val">Strøm</span>
+            <span class="in"><input id="f_val" inputmode="decimal" autocomplete="off" placeholder="0"><em id="u_val">A</em></span>
+          </label>
+
+          <div>
+            <label class="f">
+              <span class="lab">Spenning</span>
+              <span class="in"><input id="f_volt" inputmode="decimal" autocomplete="off" value="400"><em>V</em></span>
+            </label>
+            <div class="chips" id="voltChips"></div>
+          </div>
+
+          <label class="f">
+            <span class="lab">Kabellengde</span>
+            <span class="in"><input id="f_len" inputmode="decimal" autocomplete="off" placeholder="0"><em>m</em></span>
+          </label>
+
+          <label class="f">
+            <span class="lab">Forlegning</span>
+            <select id="f_method">
+              <option value="A2">A2 – I rør i isolert vegg</option>
+              <option value="B2">B2 – I rør/kanal på vegg</option>
+              <option value="C">C – Klammet på vegg/tak</option>
+              <option value="E">E – På kabelstige/rist</option>
+              <option value="D">D – Jordkabel</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <details class="more">
+        <summary>Flere innstillinger</summary>
+        <p class="hint" style="margin:0 0 14px">Fornuftige verdier er allerede satt. Endre bare det som avviker.</p>
+        <div class="grid">
+          <label class="f" id="w_eta">
+            <span class="lab">Virkningsgrad motor</span>
+            <span class="in"><input id="f_eta" inputmode="decimal" autocomplete="off" value="92"><em>%</em></span>
+          </label>
+          <label class="f">
+            <span class="lab">cos φ</span>
+            <span class="in"><input id="f_cos" inputmode="decimal" autocomplete="off" value="0,85"><em></em></span>
+          </label>
+
+          <div>
+            <span class="f"><span class="lab">Leder</span></span>
+            <div class="seg" role="radiogroup" aria-label="Ledermateriale" data-key="cond">
+              <button type="button" role="radio" data-v="Cu">Kobber</button>
+              <button type="button" role="radio" data-v="Al">Aluminium</button>
+            </div>
+          </div>
+          <div class="wide">
+            <span class="f"><span class="lab">Isolasjon</span></span>
+            <div class="seg" role="radiogroup" aria-label="Isolasjon" data-key="ins">
+              <button type="button" role="radio" data-v="PVC">PVC (eldre anlegg)</button>
+              <button type="button" role="radio" data-v="PEX">PEX 90 °C</button>
+              <button type="button" role="radio" data-v="EPR">EPR 90 °C</button>
+            </div>
+          </div>
+
+          <label class="f">
+            <span class="lab" id="l_temp">Lufttemperatur</span>
+            <span class="in"><input id="f_temp" inputmode="decimal" autocomplete="off" value="30"><em>°C</em></span>
+          </label>
+          <label class="f">
+            <span class="lab">Kurser i samme gruppe</span>
+            <span class="in"><input id="f_ngrp" inputmode="numeric" autocomplete="off" value="1"><em>stk</em></span>
+          </label>
+
+          <label class="f">
+            <span class="lab">Maks spenningsfall i drift</span>
+            <span class="in"><input id="f_dumax" inputmode="decimal" autocomplete="off" value="4"><em>%</em></span>
+          </label>
+          <label class="f">
+            <span class="lab">Minste tverrsnitt</span>
+            <select id="f_smin">
+              <option value="0.75">0,75 mm²</option>
+              <option value="1">1 mm²</option>
+              <option value="1.5">1,5 mm²</option>
+              <option value="2.5">2,5 mm²</option>
+              <option value="4">4 mm²</option>
+              <option value="6">6 mm²</option>
+              <option value="10">10 mm²</option>
+              <option value="16">16 mm²</option>
+            </select>
+          </label>
+
+          <label class="f wide">
+            <span class="lab" id="l_vern">Vern</span>
+            <span class="in"><input id="f_vern" inputmode="decimal" autocomplete="off" placeholder=""><em>A</em></span>
+            <p class="hint" id="h_vern"></p>
+          </label>
+
+          <div class="wide" id="w_start">
+            <span class="f"><span class="lab">Oppstart av motor</span></span>
+            <div class="seg two" role="radiogroup" aria-label="Oppstartsmetode" data-key="start">
+              <button type="button" role="radio" data-v="dol">Direktestart</button>
+              <button type="button" role="radio" data-v="yd">Stjerne-trekant</button>
+              <button type="button" role="radio" data-v="soft">Mykstarter</button>
+              <button type="button" role="radio" data-v="fu">Frekvensomformer</button>
+            </div>
+            <p class="hint" id="h_start" style="margin-top:8px"></p>
+            <div class="grid" style="margin-top:12px">
+              <label class="f">
+                <span class="lab">Startstrøm</span>
+                <span class="in"><input id="f_kstart" inputmode="decimal" autocomplete="off" value="6"><em>× In</em></span>
+              </label>
+              <label class="f">
+                <span class="lab">Maks fall ved start</span>
+                <span class="in"><input id="f_dustart" inputmode="decimal" autocomplete="off" value="10"><em>%</em></span>
+              </label>
+              <label class="check wide"><input type="checkbox" id="c_start" checked><span>Ta med spenningsfall ved start i dimensjoneringen</span></label>
+            </div>
+          </div>
+
+          <label class="f">
+            <span class="lab">Kortslutningsstrøm (valgfritt)</span>
+            <span class="in"><input id="f_ik" inputmode="decimal" autocomplete="off" placeholder="0"><em>kA</em></span>
+          </label>
+          <label class="f">
+            <span class="lab">Utkoblingstid</span>
+            <span class="in"><input id="f_t" inputmode="decimal" autocomplete="off" value="0,1"><em>s</em></span>
+          </label>
+        </div>
+      </details>
+    </div>
+
+    <aside class="result" aria-live="polite">
+      <p class="disclaimer"><strong>Veiledende beregning.</strong> Ikke kontrollert mot NEK 400:2026 og ingen garanti for riktighet. Verifiser alltid mot normen og kabelens datablad. Du er selv ansvarlig for dimensjoneringen.</p>
+      <div id="resbody"></div>
+    </aside>
+  </div>
+
+  <div class="foot">
+    <p>Strømføringsevne er for ett kabel med tre (motor, 3-fas) eller to (1-fas) belastede ledere, referert til 30 °C i luft og 20 °C i jord, og er korrigert for temperatur og gruppering. Aluminium er regnet som 78 % av kobber og starter på 16 mm². For 0,75 og 1 mm² er strømføringen anslått ut fra 1,5 mm². EPR bruker samme verdier som PEX, slik IEC 60364-5-52 behandler dem. Spenningsfall bruker 0,0225 Ω·mm²/m for Cu og 0,036 for Al, pluss 0,08 mΩ/m reaktans.</p>
+    <p>Tabellverdiene er veiledende (IEC 60364-5-52) og er ikke kontrollert mot NEK 400:2026. Kontroller mot normen og databladet til kabelen du bruker. Installatøren er ansvarlig for endelig dimensjonering og samsvar med forskrift om elektriske lavspenningsanlegg. Dette er et regnehjelpemiddel, ikke prosjektering.</p>
+  </div>
+</main>
+
+<script>
+window.addEventListener('error',function(e){var b=document.getElementById('jserr');if(b){b.hidden=false;b.textContent='Feil i siden: '+(e.message||'ukjent')+' (linje '+(e.lineno||'?')+')';}});
+// ==CALC==
+const SIZES=[0.75,1,1.5,2.5,4,6,10,16,25,35,50,70,95,120,150,185,240,300];
+const INS=[6,10,13,16,20,25,32,40,50,63,80,100,125,160,200,250,315,400,500,630,800,1000];
+// Strømføringsevne (A), kobber, referanse 30 °C luft / 20 °C jord. Indeks = SIZES.
+const TAB={
+ '3':{
+  PVC:{
+   A2:[13,17.5,23,29,39,52,68,83,99,125,150,172],
+   B2:[15,20,27,34,46,62,80,99,118,149,179,206],
+   C:[17.5,24,32,41,57,76,96,119,144,184,223,259,299,341,403,464],
+   E:[18.5,25,34,43,60,80,101,126,153,196,238,276,319,364,430,497],
+   D:[18,24,31,39,52,67,86,103,122,151,179,203,230,258,297,336]},
+  PEX:{
+   A2:[16.5,22,30,38,51,68,89,109,130,164,197,227],
+   B2:[19.5,26,35,44,60,80,105,128,154,194,233,268],
+   C:[21,29,38,49,68,91,116,144,175,224,271,314,363,415,490,565],
+   E:[23,31,42,54,75,100,127,158,192,246,298,346,395,450,538,621],
+   D:[22,29,37,46,61,79,101,122,144,178,211,240,271,304,351,396]}
+ },
+ '2':{
+  PVC:{
+   A2:[14,18.5,25,32,43,57,75,92,110,139,167,192],
+   B2:[16.5,23,30,38,52,69,90,111,133,168,201,232],
+   C:[19.5,27,36,46,63,85,112,138,168,213,258,299,344,392,461,530],
+   E:[22,30,40,51,70,94,119,148,180,232,282,328,379,434,514,593],
+   D:[22,29,38,47,63,81,104,125,148,183,216,246,278,312,358,404]},
+  PEX:{
+   A2:[18.5,25,33,42,57,76,99,121,145,183,220,253],
+   B2:[22,30,40,51,69,91,119,146,175,221,265,305],
+   C:[24,33,45,58,80,107,138,171,209,269,328,382,441,506,599,693],
+   E:[26,36,49,63,86,115,149,185,225,289,352,410,473,542,641,741],
+   D:[26,34,44,56,73,95,121,146,173,213,252,287,324,363,419,474]}
+ }
+};
+const KAIR={
+ PVC:[[10,1.22],[15,1.17],[20,1.12],[25,1.06],[30,1],[35,.94],[40,.87],[45,.79],[50,.71],[55,.61],[60,.5]],
+ PEX:[[10,1.15],[15,1.12],[20,1.08],[25,1.04],[30,1],[35,.96],[40,.91],[45,.87],[50,.82],[55,.76],[60,.71],[65,.65],[70,.58],[80,.41]]};
+const KGND={
+ PVC:[[10,1.1],[15,1.05],[20,1],[25,.95],[30,.89],[35,.84],[40,.77]],
+ PEX:[[10,1.07],[15,1.04],[20,1],[25,.96],[30,.93],[35,.89],[40,.85]]};
+const KGRP={
+ bunch:[[1,1],[2,.8],[3,.7],[4,.65],[5,.6],[6,.57],[7,.54],[8,.52],[9,.5],[12,.45],[16,.41],[20,.38]],
+ tray:[[1,1],[2,.88],[3,.82],[4,.77],[5,.75],[6,.73],[9,.72]],
+ gnd:[[1,1],[2,.75],[3,.65],[4,.6],[5,.55],[6,.5],[7,.45],[8,.43],[9,.41],[12,.36]]};
+const KSC={Cu:{PVC:115,PEX:143},Al:{PVC:76,PEX:94}};
+
+function interp(tab,x){
+  if(x<=tab[0][0]) return tab[0][1];
+  for(let i=1;i<tab.length;i++){
+    if(x<=tab[i][0]){const a=tab[i-1],b=tab[i];return a[1]+(b[1]-a[1])*(x-a[0])/(b[0]-a[0]);}
+  }
+  return 0; // over tabellens grense
+}
+function step(tab,n){let v=tab[0][1];for(const t of tab){if(n>=t[0])v=t[1];}return v;}
+
+function calc(p){
+  const R={warn:[]};
+  const pi=p.ins==='EPR'?'PEX':p.ins; // EPR og PEX har samme tabellverdier
+  const three=p.mode!=='k1', nl=three?'3':'2', sq3=Math.sqrt(3);
+  const cos=p.cos;
+  if(!(p.U>0)||!(p.val>0)||!(p.len>0)||!(cos>0&&cos<=1)){R.empty=true;return R;}
+
+  let Ib;
+  if(p.inp==='kw'){
+    const eta=p.mode==='motor'?p.eta/100:1;
+    Ib=p.val*1000/((three?sq3:1)*p.U*eta*cos);
+  } else Ib=p.val;
+  R.Ib=Ib;
+
+  let Id;
+  if(p.vern>0){
+    Id=p.vern; R.vernAuto=false;
+    if(Id<Ib-1e-9) R.warn.push('Vernet er lavere enn lastestrømmen. Det vil løse ut under normal drift.');
+  } else if(p.mode==='motor'){Id=Ib;R.vernAuto=true;}
+  else {Id=INS.find(x=>x>=Ib-1e-9)||Ib;R.vernAuto=true;}
+  R.Id=Id;
+
+  const b0=TAB[nl][pi][p.method];
+  const base=[b0[0]*2/3,b0[0]*5/6].concat(b0); // 0,75 og 1 mm²: anslått ut fra 1,5 mm² (jf. VDE 0298)
+  const kT=p.method==='D'?interp(KGND[pi],p.temp):interp(KAIR[pi],p.temp);
+  const gk=p.method==='D'?'gnd':p.method==='E'?'tray':'bunch';
+  const kG=step(KGRP[gk],Math.max(1,Math.round(p.ngrp)||1));
+  const kM=p.cond==='Al'?0.78:1;
+  R.kT=kT;R.kG=kG;R.kM=kM;
+  if(kT===0) R.warn.push('Temperaturen er over det tabellene dekker for valgt isolasjon.');
+
+  const rho=p.cond==='Cu'?0.0225:0.036, X=0.00008, fac=three?sq3:2;
+  const du=(S,I,c)=>fac*I*p.len*(rho/S*c+X*Math.sqrt(Math.max(0,1-c*c)))/p.U*100;
+  const startOn=p.mode==='motor'&&p.useStart;
+  const Ist=p.kstart*Ib, cst=p.start==='fu'?0.9:0.4;
+  const ksc=KSC[p.cond][pi];
+  const Smin=p.ik>0?p.ik*1000*Math.sqrt(p.t)/ksc:0;
+  R.Smin=Smin;R.startOn=startOn;R.Ist=Ist;
+
+  R.rows=SIZES.map((S,i)=>{
+    const t=base[i];
+    const avail=t!==undefined&&(p.cond==='Cu'||S>=16);
+    const Iz=avail?t*kT*kG*kM:0;
+    const d=du(S,Ib,cos);
+    const ds=startOn?du(S,Ist,cst):null;
+    return {S,Iz,avail,du:d,dus:ds,
+      okI:avail&&Iz>=Id-1e-9, okU:d<=p.dumax, okS:startOn?ds<=p.dustart:true, okK:S>=Smin};
+  });
+
+  const crit=[
+    {id:'I',label:'Strømføring',t:r=>r.okI},
+    {id:'U',label:'Spenningsfall i drift',t:r=>r.okU}
+  ];
+  if(startOn) crit.push({id:'S',label:'Spenningsfall ved start',t:r=>r.okS});
+  if(p.ik>0) crit.push({id:'K',label:'Kortslutning',t:r=>r.okK});
+  crit.forEach(c=>{c.idx=R.rows.findIndex(c.t);});
+  R.crit=crit;
+
+  const lower=Math.max(0,SIZES.indexOf(p.smin));
+  R.lower=lower;
+  if(crit.some(c=>c.idx<0)){R.none=true;R.failing=crit.filter(c=>c.idx<0).map(c=>c.label);return R;}
+  let idx=lower, dom='Minste tillatte tverrsnitt';
+  const mx=Math.max(...crit.map(c=>c.idx));
+  if(mx>=lower){idx=mx;dom=crit.find(c=>c.idx===mx).label;R.domId=crit.find(c=>c.idx===mx).id;}
+  else {R.domId='MIN';}
+  R.idx=idx;R.dom=dom;R.pick=R.rows[idx];
+  return R;
+}
+// ==/CALC==
+
+const $=id=>document.getElementById(id);
+const num=v=>{const n=parseFloat(String(v).replace(/\s/g,'').replace(',','.'));return isFinite(n)?n:NaN;};
+const dflt=(x,d)=>isNaN(x)?d:x;
+const fmt=(x,d=1)=>x.toLocaleString('nb-NO',{maximumFractionDigits:d,minimumFractionDigits:0});
+const sz=S=>fmt(S,2);
+
+const st={mode:'motor',inp:'a',cond:'Cu',ins:'PEX',start:'dol',smin:'1.5'};
+const FIELDS=['val','volt','eta','cos','method','temp','ngrp','len','dumax','smin','vern','kstart','dustart','ik','t'];
+const START_K={dol:6,yd:2,soft:3,fu:1.1};
+const START_INFO={
+  dol:'Direktestart: motoren kobles rett på nettet. Enklest og billigst, men gir høyest startstrøm, vanligvis 5 til 8 ganger merkestrøm, og dermed størst spenningsfall ved start.',
+  yd:'Stjerne-trekant: motoren starter i stjernekobling og kobles om til trekant når den har kommet opp i turtall. Startstrømmen blir omtrent en tredjedel av direktestart, ca. 2 ganger merkestrøm. Krever at motoren er viklet for trekant på nettspenningen, og seks ledere til motoren.',
+  soft:'Mykstarter: elektronikk øker spenningen gradvis (rampe) slik at strømmen begrenses, vanligvis til 2 til 4 ganger merkestrøm. Gir myk akselerasjon og mindre mekanisk belastning.',
+  fu:'Frekvensomformer: spenning og frekvens økes gradvis, og strømmen under start holdes omtrent på merkestrøm (ca. 1,1 ganger). Gir minst spenningsfall ved start. Kabelen bør være skjermet mot støy fra omformeren.'
+};
+const TEMP_DEF={air:'30',gnd:'20'};
+
+function read(){
+  const g=id=>num($('f_'+id).value);
+  return {
+    mode:st.mode,inp:st.inp,cond:st.cond,ins:st.ins,start:st.start,
+    U:g('volt'),val:g('val'),eta:dflt(g('eta'),92),cos:dflt(g('cos'),1),
+    method:$('f_method').value,temp:dflt(g('temp'),$('f_method').value==='D'?20:30),
+    ngrp:dflt(g('ngrp'),1),len:g('len'),dumax:dflt(g('dumax'),4),smin:parseFloat($('f_smin').value),
+    vern:g('vern'),kstart:dflt(g('kstart'),6),dustart:dflt(g('dustart'),10),
+    useStart:$('c_start').checked,ik:dflt(g('ik'),0),t:dflt(g('t'),0.1)
+  };
+}
+
+function syncUI(){
+  document.querySelectorAll('.seg').forEach(el=>{
+    const k=el.dataset.key;
+    el.querySelectorAll('button').forEach(b=>b.setAttribute('aria-checked',String(st[k]===b.dataset.v)));
+  });
+  const motor=st.mode==='motor', one=st.mode==='k1', kw=st.inp==='kw';
+  $('w_eta').hidden=!(motor&&kw);
+  $('w_start').hidden=!motor;
+  $('l_val').textContent=kw?(motor?'Akseleffekt (typeskilt)':'Effekt'):'Strøm';
+  $('u_val').textContent=kw?'kW':'A';
+  $('l_vern').textContent=motor?'Innstilling overlastvern':'Vern';
+  $('f_vern').placeholder=motor?'merkestrøm':'velges automatisk';
+  $('h_vern').textContent=motor
+    ?'La stå tom for å bruke beregnet merkestrøm. Fyll inn hvis motorvernet er stilt annerledes.'
+    :'La stå tom for å velge nærmeste standardverdi over lastestrømmen.';
+  $('h_start').textContent=START_INFO[st.start];
+  $('l_temp').textContent=$('f_method').value==='D'?'Jordtemperatur':'Lufttemperatur';
+  const chips=$('voltChips');
+  const opts=one?[230]:[230,400,690];
+  chips.innerHTML=opts.map(v=>'<button type="button" class="chip" data-volt="'+v+'" aria-pressed="'+(num($('f_volt').value)===v)+'">'+v+' V</button>').join('');
+}
+
+function applyMode(){
+  st.inp=st.mode==='motor'?'a':'kw';
+  if(st.mode==='motor'){$('f_volt').value='400';$('f_cos').value='0,85';$('f_method').value='E';$('f_dumax').value='4';}
+  if(st.mode==='k3'){$('f_volt').value='400';$('f_cos').value='1';$('f_method').value='C';$('f_dumax').value='4';}
+  if(st.mode==='k1'){$('f_volt').value='230';$('f_cos').value='1';$('f_method').value='C';$('f_dumax').value='4';}
+  $('f_kstart').value=fmt(START_K[st.start],1);
+  fixTemp();
+}
+function fixTemp(){
+  const gnd=$('f_method').value==='D';
+  const cur=$('f_temp').value;
+  if(gnd&&cur===TEMP_DEF.air)$('f_temp').value=TEMP_DEF.gnd;
+  if(!gnd&&cur===TEMP_DEF.gnd)$('f_temp').value=TEMP_DEF.air;
+}
+
+// Kabeltverrsnitt tegnet i skala
+function cableSVG(S,mode,cond){
+  const cfg=mode==='k1'?['#8b5a2b','#2f6fd0','pe']:mode==='k3'?['#8b5a2b','#2b2b2b','#9aa0a6','#2f6fd0','pe']:['#8b5a2b','#2b2b2b','#9aa0a6','pe'];
+  const n=cfg.length, sc=2.85;
+  const cr=Math.sqrt(S/Math.PI);
+  const t=S<=10?0.8:S<=35?1.0:S<=120?1.4:1.8;
+  const ri=cr+t, Rc=ri/Math.sin(Math.PI/n), outer=Rc+ri+1.2;
+  const metal=cond==='Cu'?'#c98a4b':'#b7bec4';
+  let g='<defs><linearGradient id="pe" x1="0" y1="0" x2="1" y2="1"><stop offset=".5" stop-color="#2e8b3d"/><stop offset=".5" stop-color="#e3cb1c"/></linearGradient></defs>';
+  g+='<circle cx="100" cy="100" r="'+(outer*sc).toFixed(1)+'" fill="#313a41" stroke="#5b6872" stroke-width="1"/>';
+  cfg.forEach((c,i)=>{
+    const a=-Math.PI/2+i*2*Math.PI/n;
+    const x=100+Rc*sc*Math.cos(a), y=100+Rc*sc*Math.sin(a);
+    g+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(ri*sc).toFixed(1)+'" fill="'+(c==='pe'?'url(#pe)':c)+'" stroke="rgba(255,255,255,.22)" stroke-width=".6"/>';
+    g+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(cr*sc).toFixed(1)+'" fill="'+metal+'"/>';
+  });
+  g+='<line x1="8" y1="192" x2="'+(8+10*sc).toFixed(1)+'" y2="192" stroke="#9fb0bb" stroke-width="1.5"/>';
+  g+='<text x="'+(8+10*sc+6).toFixed(1)+'" y="195.5" font-size="11" fill="#9fb0bb" font-family="Barlow,sans-serif">10 mm</text>';
+  return '<svg class="cable-fig" viewBox="0 0 200 200" role="img" aria-label="Kabeltverrsnitt i skala, '+sz(S)+' kvadratmillimeter">'+g+'</svg>';
+}
+
+function cableName(S,mode){
+  const s=sz(S);
+  if(mode==='k1')return '3G'+s;
+  if(mode==='k3')return '4G'+s+' eller 5G'+s;
+  return '4G'+s;
+}
+
+function render(p,R){
+  const el=$('resbody');
+  if(R.empty){
+    el.innerHTML='<h2>Anbefalt kabel</h2><p class="empty">Fyll inn last og kabellengde, så dukker anbefalt tverrsnitt opp her.</p>';
+    return;
+  }
+  const pf=(x,d=1)=>fmt(x,d);
+  let html='';
+  if(R.none){
+    html+='<h2>Ingen løsning i tabellen</h2>';
+    html+='<p class="muted" style="margin:10px 0 0">Ingen tverrsnitt opp til 300 mm² oppfyller: '+R.failing.join(', ').toLowerCase()+'. Prøv en annen forlegningsmåte (A2 og B2 gjelder bare til 120 mm²), høyere spenning, kortere kabel, eller parallelle kabler.</p>';
+    if(R.warn.length)html+='<ul class="warns">'+R.warn.map(w=>'<li>'+w+'</li>').join('')+'</ul>';
+    el.innerHTML=html;return;
+  }
+  const r=R.pick;
+  html+='<div class="res-top"><div><h2 class="muted" style="font-size:16px;font-weight:500;margin-bottom:6px">Anbefalt tverrsnitt</h2>'
+    +'<div class="res-size"><span class="n">'+sz(r.S)+'</span><span class="u">mm²</span></div>'
+    +'<p class="res-cable">'+cableName(r.S,p.mode)+'</p>'
+    +'<p class="res-sub">'+(p.cond==='Cu'?'Kobber':'Aluminium')+', '+p.ins+', metode '+p.method+'</p></div>'
+    +cableSVG(r.S,p.mode,p.cond)+'</div>';
+  html+='<p class="why">Bestemmes av: '+R.dom.toLowerCase()+'.</p>';
+
+  html+='<dl class="nums">'
+    +'<div><dt>Lastestrøm</dt><dd>'+pf(R.Ib,1)+' A</dd></div>'
+    +'<div><dt>'+(p.mode==='motor'?'Overlastvern':'Vern')+'</dt><dd>'+pf(R.Id,1)+' A</dd></div>'
+    +'<div><dt>Kabelens Iz</dt><dd>'+pf(r.Iz,0)+' A</dd></div>'
+    +'<div><dt>Spenningsfall i drift</dt><dd>'+pf(r.du,2)+' %</dd></div>'
+    +(R.startOn?'<div><dt>Startstrøm</dt><dd>'+pf(R.Ist,0)+' A</dd></div><div><dt>Spenningsfall ved start</dt><dd>'+pf(r.dus,1)+' %</dd></div>':'')
+    +'</dl>';
+
+  html+='<table class="req"><thead><tr><th>Krav</th><th>Minste</th><th>Ved valgt</th></tr></thead><tbody>';
+  R.crit.forEach(c=>{
+    const row=R.rows[c.idx];
+    let at='';
+    if(c.id==='I')at=pf(r.Iz,0)+' A ≥ '+pf(R.Id,1)+' A';
+    if(c.id==='U')at=pf(r.du,2)+' % ≤ '+pf(p.dumax,1)+' %';
+    if(c.id==='S')at=pf(r.dus,1)+' % ≤ '+pf(p.dustart,1)+' %';
+    if(c.id==='K')at='Smin '+pf(R.Smin,1)+' mm²';
+    html+='<tr class="'+(R.domId===c.id?'dom':'')+'"><td>'+c.label+'</td><td class="m">'+sz(row.S)+' mm²</td><td>'+at+'</td></tr>';
+  });
+  if(R.lower>0)html+='<tr class="'+(R.domId==='MIN'?'dom':'')+'"><td>Minste tillatte</td><td class="m">'+sz(SIZES[R.lower])+' mm²</td><td></td></tr>';
+  html+='</tbody></table>';
+
+  const w=R.warn.slice();
+  if(p.ins==='PVC')w.unshift('PVC-isolerte kabler kan ikke brukes i nye anlegg etter NEK 400:2026. Gjelder bare anlegg prosjektert etter NEK 400:2022 i 2026 og ferdigstilt innen utgangen av 2027.');
+  w.push('Kabelen må ha brannklasse minst Dca-s2,d2,a1 (NEK 400:2026). Sjekk også maks klemmetemperatur i utstyret, ofte 70 °C.');
+  if(p.cond==='Al')w.push('Aluminium krever 16 mm² eller mer og egnede koblingsklemmer.');
+  if(r.S<1.5)w.push('Under 1,5 mm² er normalt bare tillatt for fleksible ledninger og styrestrøm, ikke for faste kraftkurser. Strømverdien er anslått.');
+  if(Math.abs(R.kT*R.kG-1)>0.001)w.push('Korreksjon for temperatur og gruppering er brukt: '+pf(R.kT*R.kG,2)+' ganger tabellverdien.');
+  if(r.S>=35&&p.mode!=='k1')w.push('Over 35 mm² kan PE-lederen ofte være mindre enn faseleder. Se kabeldatabladet.');
+  if(w.length)html+='<ul class="warns">'+w.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
+
+  html+='<details><summary>Alle tverrsnitt</summary><div class="scroll"><table class="all"><thead><tr><th>mm²</th><th>Iz (A)</th><th>ΔU drift</th>'+(R.startOn?'<th>ΔU start</th>':'')+'</tr></thead><tbody>';
+  R.rows.forEach((x,i)=>{
+    const cell=(v,ok,d)=>'<td class="'+(ok?'':'bad')+'">'+pf(v,d)+' %</td>';
+    html+='<tr class="'+(i===R.idx?'pick':'')+'"><td>'+sz(x.S)+'</td>'
+      +(x.avail?'<td class="'+(x.okI?'':'bad')+'">'+pf(x.Iz,0)+'</td>':'<td class="no">–</td>')
+      +cell(x.du,x.okU,2)+(R.startOn?cell(x.dus,x.okS,1):'')+'</tr>';
+  });
+  html+='</tbody></table></div></details>';
+  el.innerHTML=html;
+}
+
+function save(){
+  try{
+    const f={};FIELDS.forEach(k=>f[k]=$('f_'+k).value);
+    localStorage.setItem('kabeldim-v1',JSON.stringify({st,f,cs:$('c_start').checked}));
+  }catch(e){}
+}
+function load(){
+  try{
+    const raw=localStorage.getItem('kabeldim-v1'); if(!raw)return false;
+    const d=JSON.parse(raw);
+    if(d.st)Object.assign(st,d.st);
+    if(d.f)FIELDS.forEach(k=>{if(d.f[k]!==undefined)$('f_'+k).value=d.f[k];});
+    if(typeof d.cs==='boolean')$('c_start').checked=d.cs;
+    return true;
+  }catch(e){return false;}
+}
+
+function update(){
+  syncUI();
+  const p=read();
+  render(p,calc(p));
+  save();
+}
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.seg button');
+  if(b){
+    const key=b.parentElement.dataset.key;
+    st[key]=b.dataset.v;
+    if(key==='mode')applyMode();
+    if(key==='start')$('f_kstart').value=fmt(START_K[st.start],1);
+    update();return;
+  }
+  const c=e.target.closest('.chip');
+  if(c){$('f_volt').value=c.dataset.volt;update();}
+});
+FIELDS.forEach(k=>{
+  const el=$('f_'+k);
+  el.addEventListener('input',update);
+  el.addEventListener('change',()=>{if(k==='method')fixTemp();update();});
+});
+$('c_start').addEventListener('change',update);
+
+if(!load()){applyMode();}
+$('f_smin').value=String(parseFloat($('f_smin').value)||1.5);
+update();
+</script>
+</body>
+</html>
